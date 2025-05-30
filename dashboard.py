@@ -5,19 +5,6 @@ import altair as alt
 # Configuração da página
 st.set_page_config(page_title="EasyDash", layout="wide")
 
-# --- Cabeçalho personalizado ---
-with st.container():
-    col_logo, col_title, col_user = st.columns([1, 5, 2])
-    with col_logo:
-        st.image("icone_easydash.png", width=50)
-    with col_title:
-        st.markdown("## DASHBOARD - EASYDASH")
-    with col_user:
-        st.write("👤 Olá, Alex Chaves")
-        search = st.text_input("🔍 Procurar", placeholder="Digite para buscar...", label_visibility="collapsed")
-
-st.markdown("---")
-
 # Carregar dados
 @st.cache_data
 def load_data():
@@ -35,17 +22,39 @@ orders["Discount"] = orders["Discount"].astype(float)
 orders["Order Date"] = pd.to_datetime(orders["Order Date"])
 orders["Month"] = orders["Order Date"].dt.month
 
+# --- Cabeçalho personalizado ---
+with st.container():
+    col_logo, col_title, col_user = st.columns([1, 5, 2])
+    with col_logo:
+        st.image("icone_easydash.png", width=50)
+    with col_title:
+        st.markdown("## DASHBOARD - EASYDASH")
+    with col_user:
+        st.write("👤 Olá, Alex Chaves")
+        search = st.text_input("🔍 Procurar", placeholder="Digite para buscar...", label_visibility="collapsed")
+
+st.markdown("---")
+
+# --- Filtro com st.pills ---
+segment_options = sorted(orders["Segment"].unique())
+selected_segments = st.pills("🎯 Filtrar Segmentos:", options=segment_options, selection_mode="multi")
+
+# Aplica todos os segmentos se nada estiver selecionado
+if not selected_segments:
+    filtered_orders = orders.copy()
+else:
+    filtered_orders = orders[orders["Segment"].isin(selected_segments)]
+
 # --- KPIs ---
 kpi1, kpi2, kpi3 = st.columns(3)
-kpi1.metric("Lucro Total com Desconto", f"{orders['Profit'].sum() / 1e6:.3f}M")
-kpi2.metric("Volume de Vendas com Desconto", f"{orders[orders['Discount'] > 0]['Sales'].sum():,.0f}")
-kpi3.metric("Volume Total de Pedidos", f"{orders['Order ID'].nunique():,}")
+kpi1.metric("Lucro Total com Desconto", f"{filtered_orders['Profit'].sum() / 1e6:.3f}M")
+kpi2.metric("Volume de Vendas com Desconto", f"{filtered_orders[filtered_orders['Discount'] > 0]['Sales'].sum():,.0f}")
+kpi3.metric("Volume Total de Pedidos", f"{filtered_orders['Order ID'].nunique():,}")
 
-# --- Geração dos gráficos como funções reutilizáveis ---
-
+# --- Gráficos com base nos dados filtrados ---
 def chart_top_states():
     top_states = (
-        orders[orders["Discount"] > 0]
+        filtered_orders[filtered_orders["Discount"] > 0]
         .groupby("State")["Sales"]
         .sum()
         .sort_values(ascending=False)
@@ -58,20 +67,20 @@ def chart_top_states():
     ).properties(title="Top Estados que Compram com Desconto")
 
 def chart_segment_profit():
-    data = orders.groupby("Segment")["Profit"].sum().reset_index()
+    data = filtered_orders.groupby("Segment")["Profit"].sum().reset_index()
     return alt.Chart(data).mark_bar().encode(
         x="Profit",
         y=alt.Y("Segment", sort="-x")
-    ).properties(title="Top Lucro por Segmento")
+    ).properties(title="Lucro por Segmento")
 
 def chart_discount_profit():
-    return alt.Chart(orders).mark_circle(size=60, opacity=0.5).encode(
+    return alt.Chart(filtered_orders).mark_circle(size=60, opacity=0.5).encode(
         x="Discount",
         y="Profit"
     ).properties(title="Desconto vs Lucro")
 
 def chart_monthly_sales_by_segment():
-    data = orders.groupby(["Month", "Segment"])["Sales"].sum().reset_index()
+    data = filtered_orders.groupby(["Month", "Segment"])["Sales"].sum().reset_index()
     return alt.Chart(data).mark_line(point=True).encode(
         x="Month:O",
         y="Sales:Q",
@@ -79,7 +88,7 @@ def chart_monthly_sales_by_segment():
     ).properties(title="Vendas por Segmento ao Longo do Ano")
 
 def chart_category_by_region():
-    data = orders.groupby(["Region", "Category"])["Sales"].sum().reset_index()
+    data = filtered_orders.groupby(["Region", "Category"])["Sales"].sum().reset_index()
     return alt.Chart(data).mark_bar().encode(
         x="Region:N",
         y="Sales:Q",
@@ -87,13 +96,12 @@ def chart_category_by_region():
     ).properties(title="Categorias Mais Vendidas por Região")
 
 def chart_discount_quantity():
-    return alt.Chart(orders).mark_circle(size=60, opacity=0.5).encode(
+    return alt.Chart(filtered_orders).mark_circle(size=60, opacity=0.5).encode(
         x="Discount",
         y="Quantity"
     ).properties(title="Desconto vs Qtd Vendida")
 
-# --- Exibição Responsiva dos Gráficos ---
-
+# --- Exibição dos gráficos ---
 charts = [
     chart_top_states(),
     chart_segment_profit(),
@@ -103,7 +111,7 @@ charts = [
     chart_discount_quantity()
 ]
 
-# Mostra os gráficos responsivamente em grupos de 3
+# Layout 3 por linha
 for i in range(0, len(charts), 3):
     cols = st.columns(3)
     for j in range(3):

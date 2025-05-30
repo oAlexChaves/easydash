@@ -1,146 +1,116 @@
-# Importando bibliotecas
+# app_superstore.py
+
+import streamlit as st
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-# Carregando dados (ajuste o caminho se necessário)
-df = pd.read_excel("Sample - Superstore.xls", engine="xlrd")
+# Configuração inicial
+st.set_page_config(page_title="Análise Superstore", layout="wide")
+st.title("📊 Análise de Dados - Sample Superstore")
 
-# Garantir datas como datetime
-df['Order Date'] = pd.to_datetime(df['Order Date'])
-df['Ship Date'] = pd.to_datetime(df['Ship Date'])
-df['Ano'] = df['Order Date'].dt.year
-df['Mes'] = df['Order Date'].dt.month
+# Carregamento de dados
+@st.cache_data
+def carregar_dados():
+    df = pd.read_excel("Sample - Superstore.xls", engine="xlrd")
+    df['Order Date'] = pd.to_datetime(df['Order Date'])
+    df['Ship Date'] = pd.to_datetime(df['Ship Date'])
+    df['Ano'] = df['Order Date'].dt.year
+    df['Mes'] = df['Order Date'].dt.month
+    return df
 
-#1
-# Produtos com maior lucro mesmo com desconto
+df = carregar_dados()
+
+# 1. Produtos com maior lucro com desconto
+st.subheader("1. Produtos com Maior Lucro com Desconto")
 lucro_com_desconto = df[df['Discount'] > 0].groupby('Product Name')['Profit'].sum().sort_values(ascending=False).head(10)
-lucro_com_desconto.plot(kind='barh', title='Top 10 Produtos com Maior Lucro (com desconto)', color='green')
-plt.xlabel('Lucro Total')
-plt.show()
+
+fig1, ax1 = plt.subplots()
+lucro_com_desconto.plot(kind='barh', color='green', ax=ax1)
+ax1.set_title("Top 10 Produtos com Maior Lucro (com desconto)")
+ax1.set_xlabel("Lucro Total")
+st.pyplot(fig1)
 
 # Categorias mais vendidas por região
-sns.countplot(data=df, x='Region', hue='Category')
-plt.title('Categorias mais vendidas por Região')
-plt.ylabel('Quantidade de Vendas')
-plt.xlabel('Região')
-plt.legend(title='Categoria')
-plt.show()
+st.subheader("2. Categorias mais Vendidas por Região")
+fig2, ax2 = plt.subplots()
+sns.countplot(data=df, x='Region', hue='Category', ax=ax2)
+ax2.set_title('Categorias mais Vendidas por Região')
+ax2.set_ylabel('Quantidade de Vendas')
+ax2.set_xlabel('Região')
+st.pyplot(fig2)
 
-'''
-# Produtos mais vendidos são os mais lucrativos?
-produtos_qtd = df.groupby('Product Name')['Quantity'].sum()
-produtos_lucro = df.groupby('Product Name')['Profit'].sum()
-sns.scatterplot(x=produtos_qtd, y=produtos_lucro)
-plt.title('Quantidade vendida x Lucro por Produto')
-plt.xlabel('Quantidade Vendida')
-plt.ylabel('Lucro Total')
-plt.show()
-'''
-#2
-# Desconto influencia no volume de vendas por produto?
-sns.lmplot(data=df, x='Discount', y='Quantity', scatter_kws={'alpha':0.3})
-plt.title('Desconto vs Quantidade Vendida')
-plt.show()
+# 2. Desconto influencia no volume de vendas?
+st.subheader("3. Desconto vs Quantidade Vendida")
+fig3 = sns.lmplot(data=df, x='Discount', y='Quantity', scatter_kws={'alpha':0.3})
+st.pyplot(fig3.fig)
 
-#3
-# Existe ponto ideal de desconto para lucro?
-sns.lmplot(data=df, x='Discount', y='Profit', scatter_kws={'alpha':0.3})
-plt.title('Desconto vs Lucro')
-plt.show()
+# 3. Existe ponto ideal de desconto para lucro?
+st.subheader("4. Desconto vs Lucro")
+fig4 = sns.lmplot(data=df, x='Discount', y='Profit', scatter_kws={'alpha':0.3})
+st.pyplot(fig4.fig)
 
-#4
-# Lucro por segmento
+# 4. Lucro por Segmento
+st.subheader("5. Lucro por Segmento")
 segmento_lucro = df.groupby('Segment')['Profit'].sum().sort_values(ascending=False)
-segmento_lucro.plot(kind='bar', title='Lucro por Segmento', color='skyblue')
-plt.ylabel('Lucro Total')
-plt.show()
-'''
-# Resposta de segmentos ao desconto
-sns.boxplot(x='Segment', y='Discount', data=df)
-plt.title('Resposta ao Desconto por Segmento')
-plt.show()
-'''
-#5
-# Clientes com compras recorrentes e ticket médio
+
+fig5, ax5 = plt.subplots()
+segmento_lucro.plot(kind='bar', color='skyblue', ax=ax5)
+ax5.set_ylabel("Lucro Total")
+ax5.set_title("Lucro por Segmento")
+st.pyplot(fig5)
+
+# 5. Top clientes por ticket médio
+st.subheader("6. Clientes com Maior Ticket Médio")
 clientes = df.groupby('Customer ID').agg({
     'Sales': 'sum',
     'Order ID': pd.Series.nunique,
     'Profit': 'sum'
 }).rename(columns={'Order ID': 'Pedidos'})
 clientes['Ticket Medio'] = clientes['Sales'] / clientes['Pedidos']
-clientes.sort_values(by='Ticket Medio', ascending=False).head(10)[['Ticket Medio']].plot(kind='barh', title='Top 10 Clientes por Ticket Médio')
-plt.xlabel('Ticket Médio')
-plt.show()
+top_ticket = clientes.sort_values(by='Ticket Medio', ascending=False).head(10)
 
-#6
-# Volume de vendas por segmento e mês
-sns.lineplot(data=df.groupby(['Segment', 'Mes'])['Sales'].sum().reset_index(), x='Mes', y='Sales', hue='Segment')
-plt.title('Vendas por Segmento ao longo do Ano')
-plt.show()
-'''
-# Tempo de envio vs lucro
-( (df['Ship Date'] - df['Order Date']).dt.days ).hist()
-plt.title('Distribuição de Tempo de Envio (dias)')
-plt.xlabel('Dias entre Pedido e Envio')
-plt.show()
-'''
-#7
-# Estados que mais compram com desconto
+fig6, ax6 = plt.subplots()
+top_ticket['Ticket Medio'].plot(kind='barh', ax=ax6)
+ax6.set_title("Top 10 Clientes por Ticket Médio")
+ax6.set_xlabel("Ticket Médio")
+st.pyplot(fig6)
+
+# 6. Volume de vendas por segmento e mês
+st.subheader("7. Volume de Vendas por Segmento e Mês")
+df_segmento_mes = df.groupby(['Segment', 'Mes'])['Sales'].sum().reset_index()
+
+fig7, ax7 = plt.subplots()
+sns.lineplot(data=df_segmento_mes, x='Mes', y='Sales', hue='Segment', ax=ax7)
+ax7.set_title("Vendas por Segmento ao Longo do Ano")
+st.pyplot(fig7)
+
+# 7. Estados que mais compram com desconto
+st.subheader("8. Estados com Maior Volume de Compras com Desconto")
 estado_desc = df[df['Discount'] > 0].groupby('State')['Sales'].sum().sort_values(ascending=False).head(10)
-estado_desc.plot(kind='barh', title='Top Estados que compram com desconto', color='orange')
-plt.show()
 
-#8
-# Região com maior lucro
+fig8, ax8 = plt.subplots()
+estado_desc.plot(kind='barh', color='orange', ax=ax8)
+ax8.set_title("Top Estados que Compram com Desconto")
+st.pyplot(fig8)
+
+# 8. Região com maior lucro
+st.subheader("9. Lucro por Região")
 lucro_regiao = df.groupby('Region')['Profit'].sum().sort_values(ascending=False)
-lucro_regiao.plot(kind='bar', title='Lucro por Região', color='purple')
-plt.ylabel('Lucro Total')
-plt.show()
 
-'''
-# Código postal influencia tipo de produto vendido?
-produto_por_zip = df.groupby(['Postal Code', 'Category'])['Sales'].sum().unstack().fillna(0)
-produto_por_zip.plot(kind='bar', stacked=True, figsize=(12, 6), title='Categorias por Código Postal (Top Zips)')
-plt.ylabel('Vendas')
-plt.show()
-'''
-'''
-# Modos de envio rápidos impactam lucro?
-sns.boxplot(data=df, x='Ship Mode', y='Profit')
-plt.title('Lucro por Tipo de Envio')
-plt.xticks(rotation=45)
-plt.show()
-'''
+fig9, ax9 = plt.subplots()
+lucro_regiao.plot(kind='bar', color='purple', ax=ax9)
+ax9.set_ylabel("Lucro Total")
+ax9.set_title("Lucro por Região")
+st.pyplot(fig9)
 
-'''
-# Tempo de envio maior reduz lucro?
-df['Tempo Envio'] = (df['Ship Date'] - df['Order Date']).dt.days
-sns.scatterplot(data=df, x='Tempo Envio', y='Profit')
-plt.title('Tempo de Envio vs Lucro')
-plt.show()
-'''
+# 9. Sazonalidade das vendas
+st.subheader("10. Sazonalidade nas Vendas")
+vendas_mes = df.groupby('Mes')['Sales'].sum().reset_index()
 
-#9
-# Sazonalidade de vendas
-sns.lineplot(data=df.groupby(['Mes'])['Sales'].sum().reset_index(), x='Mes', y='Sales')
-plt.title('Sazonalidade nas Vendas')
-plt.xticks(range(1,13))
-plt.xlabel('Mês')
-plt.ylabel('Vendas')
-plt.show()
-
-'''
-# Desconto aplicado por mês em produtos mais vendidos
-mais_vendidos = df.groupby('Product Name')['Quantity'].sum().sort_values(ascending=False).head(5).index
-df_top = df[df['Product Name'].isin(mais_vendidos)]
-sns.boxplot(data=df_top, x='Mes', y='Discount', hue='Product Name')
-plt.title('Desconto por Mês nos Produtos Mais Vendidos')
-plt.show()
-'''
-'''
-# Correlação entre desconto e lucro
-sns.heatmap(df[['Sales', 'Profit', 'Discount', 'Quantity']].corr(), annot=True, cmap='coolwarm')
-plt.title('Matriz de Correlação')
-plt.show()
-'''
+fig10, ax10 = plt.subplots()
+sns.lineplot(data=vendas_mes, x='Mes', y='Sales', ax=ax10)
+ax10.set_title("Sazonalidade nas Vendas")
+ax10.set_xlabel("Mês")
+ax10.set_ylabel("Vendas")
+st.pyplot(fig10)
