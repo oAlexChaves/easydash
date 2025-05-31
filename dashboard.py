@@ -45,11 +45,78 @@ if not selected_segments:
 else:
     filtered_orders = orders[orders["Segment"].isin(selected_segments)]
 
-# --- KPIs ---
-kpi1, kpi2, kpi3 = st.columns(3)
-kpi1.metric("Lucro Total com Desconto", f"{filtered_orders['Profit'].sum() / 1e6:.3f}M")
-kpi2.metric("Volume de Vendas com Desconto", f"{filtered_orders[filtered_orders['Discount'] > 0]['Sales'].sum():,.0f}")
-kpi3.metric("Volume Total de Pedidos", f"{filtered_orders['Order ID'].nunique():,}")
+# --- KPIs em caixas estilizadas ---
+# --- KPIs em caixas estilizadas com suporte a tema claro/escuro ---
+with st.container():
+    st.markdown("""
+        <style>
+            .kpi-container {
+                display: flex;
+                gap: 1rem;
+                justify-content: space-between;
+                margin-bottom: 1rem;
+            }
+
+            .kpi-box {
+                flex: 1;
+                padding: 1rem;
+                border-radius: 0.75rem;
+                text-align: center;
+                background-color: rgba(240, 240, 240, 0.7);
+                border: 1px solid #ddd;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+                transition: background-color 0.3s ease;
+            }
+
+            .kpi-title {
+                font-size: 0.9rem;
+                color: #666;
+                margin-bottom: 0.25rem;
+            }
+
+            .kpi-value {
+                font-size: 1.4rem;
+                font-weight: bold;
+                color: #111;
+            }
+
+            @media (prefers-color-scheme: dark) {
+                .kpi-box {
+                    background-color: rgba(30, 30, 30, 0.7);
+                    border: 1px solid #333;
+                }
+
+                .kpi-title {
+                    color: #aaa;
+                }
+
+                .kpi-value {
+                    color: #fff;
+                }
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
+    lucro = f"{filtered_orders['Profit'].sum() / 1e6:.3f}M"
+    vendas = f"{filtered_orders[filtered_orders['Discount'] > 0]['Sales'].sum():,.0f}"
+    pedidos = f"{filtered_orders['Order ID'].nunique():,}"
+
+    st.markdown(f"""
+        <div class="kpi-container">
+            <div class="kpi-box">
+                <div class="kpi-title">Lucro Total com Desconto</div>
+                <div class="kpi-value">{lucro}</div>
+            </div>
+            <div class="kpi-box">
+                <div class="kpi-title">Vendas com Desconto</div>
+                <div class="kpi-value">{vendas}</div>
+            </div>
+            <div class="kpi-box">
+                <div class="kpi-title">Pedidos Totais</div>
+                <div class="kpi-value">{pedidos}</div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 
 # --- Gráficos com base nos dados filtrados ---
 def chart_top_states():
