@@ -40,7 +40,7 @@ orders["Month"] = orders["Order Date"].dt.month
 with st.container():
     col_logo, col_title, col_user = st.columns([1, 5, 2])
     with col_logo:
-        st.image("icone_easydash.png", width=50)
+        st.image("icone_easydash_branco.png", width=50)
     with col_title:
         st.markdown("## DASHBOARD - EASYDASH")
     with col_user:
@@ -85,90 +85,43 @@ with aba_graficos:
         vendas_sem_fmt = f"{vendas_sem_desc:,.0f}"
         pedidos_com_desc_fmt = f"{pedidos_com_desc:,}"
 
-        st.markdown("""
-            <style>
-                .kpi-container {
-                    display: flex;
-                    gap: 1rem;
-                    justify-content: space-between;
-                    margin-bottom: 1rem;
-                }
+        with st.container():
+            # --- KPIs com e sem desconto ---
+            lucro_com_desc = filtered_orders[filtered_orders["Discount"] > 0]["Profit"].sum()
+            lucro_sem_desc = filtered_orders[filtered_orders["Discount"] == 0]["Profit"].sum()
 
-                .kpi-box {
-                    flex: 1;
-                    padding: 1rem;
-                    border-radius: 0.75rem;
-                    text-align: center;
-                    background-color: rgba(240, 240, 240, 0.7);
-                    border: 1px solid #ddd;
-                    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-                    transition: background-color 0.3s ease;
-                }
+            vendas_com_desc = filtered_orders[filtered_orders["Discount"] > 0]["Sales"].sum()
+            vendas_sem_desc = filtered_orders[filtered_orders["Discount"] == 0]["Sales"].sum()
 
-                .kpi-title {
-                    font-size: 0.9rem;
-                    color: #666;
-                    margin-bottom: 0.25rem;
-                }
+            pedidos_totais = filtered_orders["Order ID"].nunique()
+            pedidos_com_desc = filtered_orders[filtered_orders["Discount"] > 0]["Order ID"].nunique()
 
-                .kpi-value {
-                    font-size: 1.4rem;
-                    font-weight: bold;
-                    color: #111;
-                }
+            lucro_fmt = f"{lucro_com_desc / 1e6:.3f}M"
+            vendas_fmt = f"{vendas_com_desc:,.0f}"
+            pedidos_fmt = f"{pedidos_totais:,}"
 
-                @media (prefers-color-scheme: dark) {
-                    .kpi-box {
-                        background-color: rgba(30, 30, 30, 0.7);
-                        border: 1px solid #333;
-                    }
+            lucro_sem_fmt = f"{lucro_sem_desc / 1e6:.3f}M"
+            vendas_sem_fmt = f"{vendas_sem_desc:,.0f}"
+            pedidos_com_desc_fmt = f"{pedidos_com_desc:,}"
 
-                    .kpi-title {
-                        color: #aaa;
-                    }
+            # Primeira linha de KPIs
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric(label="Lucro Total com Desconto", value=lucro_fmt)
+            with col2:
+                st.metric(label="Vendas com Desconto", value=vendas_fmt)
+            with col3:
+                st.metric(label="Pedidos Totais", value=pedidos_fmt)
 
-                    .kpi-value {
-                        color: #fff;
-                    }
-                }
-            </style>
-        """, unsafe_allow_html=True)
+            # Segunda linha de KPIs
+            col4, col5, col6 = st.columns(3)
+            with col4:
+                st.metric(label="Lucro Total sem Desconto", value=lucro_sem_fmt)
+            with col5:
+                st.metric(label="Vendas sem Desconto", value=vendas_sem_fmt)
+            with col6:
+                st.metric(label="Pedidos com Desconto", value=pedidos_com_desc_fmt)
 
-        # Primeira linha de KPIs
-        st.markdown(f"""
-            <div class="kpi-container">
-                <div class="kpi-box">
-                    <div class="kpi-title">Lucro Total com Desconto</div>
-                    <div class="kpi-value">{lucro_fmt}</div>
-                </div>
-                <div class="kpi-box">
-                    <div class="kpi-title">Vendas com Desconto</div>
-                    <div class="kpi-value">{vendas_fmt}</div>
-                </div>
-                <div class="kpi-box">
-                    <div class="kpi-title">Pedidos Totais</div>
-                    <div class="kpi-value">{pedidos_fmt}</div>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-
-        # Segunda linha de KPIs
-        st.markdown(f"""
-            <div class="kpi-container">
-                <div class="kpi-box">
-                    <div class="kpi-title">Lucro Total sem Desconto</div>
-                    <div class="kpi-value">{lucro_sem_fmt}</div>
-                </div>
-                <div class="kpi-box">
-                    <div class="kpi-title">Vendas sem Desconto</div>
-                    <div class="kpi-value">{vendas_sem_fmt}</div>
-                </div>
-                <div class="kpi-box">
-                    <div class="kpi-title">Pedidos com Desconto</div>
-                    <div class="kpi-value">{pedidos_com_desc_fmt}</div>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
 
 
 
