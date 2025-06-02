@@ -1,6 +1,7 @@
 # EasyDash
 
 O **EasyDash** é uma aplicação de dashboard interativo construída com **Streamlit** e **Pandas** para análise de dados.
+**Acessável em https://easydash.streamlit.app/ **
 
 ## Como Rodar o Projeto
 
@@ -38,7 +39,7 @@ pip install -r requirements.txt
 Para rodar o projeto, utilize o comando:
 
 ```bash
-streamlit run main.py
+streamlit run dashboard.py
 ```
 
 Isso abrirá a aplicação no seu navegador, onde você poderá interagir com o dashboard e visualizar os gráficos gerados.
